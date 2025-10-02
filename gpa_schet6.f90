@@ -4,12 +4,12 @@
     !ipg - давление газа на входе, кг/см2; itg - температура газа на входе, К; n - число оборотов;
     !igg - расход газа на входе, кг/с; kpompaj - коэффициент помпажирования
     !otg - температура газа на выходе, K; opg - давление газа на выходе, кг/см2
-    !chislo_agr - оптимизируемый
+    !chislo_agr - считается
     !alpha - вкл выкл определенного типа гпа (4)
     !qrn - высшая объемная теплота сгорания топлива
     !btyr - г.у.т./кВтч удельный расход топлива турбинами 
 subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
-    & q12al,qrez3al,q16al,qrez4al,&
+    & q12al,qrez3al,q16al,qrez4al,xindral,&
     & nnpr,ogr63,ogr10,ogr12,ogr16,ogr,qneb,nnend,kapvl_end,ogg,otg,opg,&
     & igg,ipg,itg,n,kpompaj,btyr,perem_sost,post_sost,alpha,xindr,sost_dol,al6t3,al10,al12,al16,alrez1,alrez2,alrez3,alrez4,pch,hom)
     use raschet_gpa_new
@@ -43,7 +43,7 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         real :: pin,qrn,qtek,rosm,rsm,z,gtyr_end,sgatie_end
         !!!=== Новый метод === 
         real, dimension(12) :: al6t3,q6t3al
-        real :: gkoef,alrez4,qrez4al
+        real :: gkoef,alrez4,qrez4al,xindral
         real, dimension(4) :: nrez,chislo_agr,al16,ogrrez,q16al
         real, dimension(3) :: alrez1,qrez1al
         real, dimension(7) :: al10,q10al
@@ -55,8 +55,8 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         !!!!!
         !!!=== Новый метод ===
         gkoef=1.
+        chislo_agr=2. ! не может быть меньше 2 (1 - в работе, 1 - резерв)
         
-        chislo_agr(1)=2. ! не может быть меньше 2 (1 - в работе, 1 - резерв)
         do i=1,12
             chislo_agr(1)=chislo_agr(1) + al6t3(i)
             q6t3al(i)=al6t3(i)*(1.-al6t3(i))*gkoef*alpha(1)
@@ -68,7 +68,6 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         end do
         ogrrez(1)=chislo_agr(1)-1.-nrez(1)
         
-        chislo_agr(2)=2.
         do i=1,7
             chislo_agr(2)=chislo_agr(2)+al10(i)
             q10al(i)=al10(i)*(1.-al10(i))*gkoef*alpha(2)
@@ -80,7 +79,6 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         end do
         ogrrez(2)=chislo_agr(2)-1.-nrez(2)
         
-        chislo_agr(3)=2.
         do i=1,6
             chislo_agr(3)=chislo_agr(3)+al12(i)
             q12al(i)=al12(i)*(1.-al12(i))*gkoef*alpha(3)
@@ -92,7 +90,6 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         end do
         ogrrez(3)=chislo_agr(3)-1.-nrez(3)
         
-        chislo_agr(4)=2.
         do i=1,4
             chislo_agr(4)=chislo_agr(4)+al16(i)
             q16al(i)=al16(i)*(1.-al16(i))*gkoef*alpha(4)
@@ -101,6 +98,8 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         nrez(4)=nrez(4)+alrez4
         qrez4al=alrez4*(1.-alrez4)*gkoef*alpha(4)
         ogrrez(4)=chislo_agr(4)-1.-nrez(4)
+        
+        xindral=xindr*(1.-xindr)*gkoef
         !!!===
         itg=300.
         !!!!!
@@ -116,21 +115,18 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         !!! === новый метод ===
         racxod_for_one=racxodpr/(chislo_agr-nrez)
         !!! ===
+        
         if (pch==3.) then
             10 format(5x,10('==='),' ENTER PARAMETERS GPA#',i3,1x,15('==='),//5x,'IGG:',f16.6,2x,'IPG:',f16.6,2x,'PIN:',f16.6,2x,'ITG:',f16.5,&
                & /5x,'Z:',f16.6,4x,'RSM:',f16.6,2x,'ROSM:',f16.6,/5x,'QTEK:',f16.6)
             15 format(/5x,'ALPHA:',4(f16.6),/5x,'N:',4x,4(f16.6),/5x,'FREQ:',1x,4(f16.6),/5x,'NNPR:',1x,4(f16.6))
             25 FORMAT(/5x,'RACXODPR:    ',4(f16.6),/5x,'RACXOD_FOR_1:',4(f16.6))            
-            
-            
             20 Format(/5x,'CHISLO_AGR:',5x,4(f16.6),/5x,'NREZ:',11x,4(f16.6),/5x,'CHISLO_AGR-NREZ:',4(f16.6))
-            
                         
             write(*,10)int(hom),igg,ipg,pin,itg,z,rsm,rosm,qtek
             write(*,15)alpha,n,freq,nnpr
             write(*,20)chislo_agr,nrez,chislo_agr-nrez
             write(*,25)racxodpr,racxod_for_one
-
         end if
 
         
@@ -161,7 +157,8 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         end if
 
         
-        gtyr=(btyr*7./11.06/3600.)*Nn*(chislo_agr-1.) !расход топлива турбиной 6,10,12,16 МВт
+        !gtyr=(btyr*7./11.06/3600.)*Nn*(chislo_agr-1.) !расход топлива турбиной 6,10,12,16 МВт
+        gtyr=(btyr*7./11.06/3600.)*Nn*(chislo_agr-nrez) !расход топлива турбиной 6,10,12,16 МВт
         
         ogr63(5)=Nrasp(1)-(Nn(1)+100.)
         ogr10(5)=Nrasp(2)-(Nn(2)+100.)
@@ -192,6 +189,7 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
         Nustan=NGPAnom*chislo_agr
         kapvl_end=sum(alpha*(post_sost+perem_sost*Nustan))
         qneb=xindr-sum(alpha)
+        
         if (pch==3.) then
                40 FORMAT(/5x,10('==='),' OUTPUT PARAMETERS GPA#',i3,1x,'=',21('=='),//5x,'OGG:',f16.6,2x,'OPG:',f16.6,2x,'OTG:',f16.6,&
                & /5x,'NPOTR:',f16.6,2x,'NUSTAN:',f16.6,/5x,'GTYR:',f16.6,2x,'SGATIE:',f16.6,//5x,'OGR:',5(f16.6),//5x,'KAPVL:',f30.6)
@@ -200,10 +198,10 @@ subroutine gpa_schet6(chislo_agr,ogrrez,q6t3al,qrez1al,q10al,qrez2al,&
                & //5x,'AL10:',3x,6(f16.6),/13x,f16.6,/5x,'Q10AL:',2x,6(f16.6),/13x,f16.6,/5x,'ALREZ2:',1x,2(f16.6),/5x,'QREZ2AL:',2(f16.6),&
                & //5x,'AL12:',3x,6(f16.6),/5x,'Q12AL:',2x,6(f16.6),/5x,'ALREZ3:',1x,2(f16.6),/5x,'QREZ3AL:',2(f16.6),&
                & //5x,'AL16:',3x,4(f16.6),/5x,'Q16AL:',2x,4(f16.6),/5x,'ALREZ4:',1x,f16.6,/5x,'QREZ4AL:',f16.6,&
-               & /5x,'OGRREZ:',1x,4(f16.6),/5x,100('-'),/5x,100('='))
+               & /5x,'OGRREZ:',1x,4(f16.6),/5x,'XINDRAL:',f16.6,/5x,100('-'),/5x,100('='))
             write(*,40)int(hom),ogg,opg,otg,NNend,sum(Nustan*alpha),gtyr_end,sgatie_end,ogr,kapvl_end
             write(*,110)xindr,qneb
-            write(*,150)al6t3(1:6),al6t3(7:12),q6t3al(1:6),q6t3al(1:6),alrez1,qrez1al,al10(1:6),al10(7),q10al(1:6),q10al(7),alrez2,qrez2al,al12,q12al,alrez3,qrez3al,al16,q16al,alrez4,qrez4al,ogrrez
+            write(*,150)al6t3(1:6),al6t3(7:12),q6t3al(1:6),q6t3al(1:6),alrez1,qrez1al,al10(1:6),al10(7),q10al(1:6),q10al(7),alrez2,qrez2al,al12,q12al,alrez3,qrez3al,al16,q16al,alrez4,qrez4al,ogrrez,xindral
         end if
         
 
